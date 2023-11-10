@@ -1,2 +1,2 @@
-# dub-with-elevenlabs
+# Dub with ElevenLabs
 This repository contains a Chrome extension designed to streamline the user experience of ElevenLabs dubbing with YouTube.
