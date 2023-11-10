@@ -32,38 +32,9 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
             function: injectDataIntoPage,
             args: [videoDetails]
         });
-        chrome.scripting.executeScript({
-            target: {
-                tabId: tabId
-            },
-            function: checkIfUserIsLoggedIn,
-        });
         dubbingTabId = null;
     }
 });
-
-function checkIfUserIsLoggedIn() {
-    const signUpLinks = Array.from(document.querySelectorAll('a')).filter(a => a.textContent.includes('Sign Up'));
-    // If the user has the option to sign up, they are not logged in
-    if (signUpLinks.length > 0) {
-        chrome.runtime.sendMessage({
-            action: "openAffiliateLink"
-        });
-    }
-}
-
-
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    if (message.action === "openAffiliateLink") {
-        chrome.tabs.create({ url: 'https://try.elevenlabs.io/c3516gvcplb3' });
-        chrome.notifications.create({
-            type: 'basic',
-            title: 'Login Required',
-            message: 'You are not logged in. You will now be redirected to the login page.'
-        });
-    }
-});
-
 
 function injectDataIntoPage(videoDetails) {
     function waitForElement(querySelectorOrXPath, isXPath, callback) {
@@ -95,94 +66,108 @@ function injectDataIntoPage(videoDetails) {
             console.log(`Video name: ${videoDetails.name}`);
             console.log(`Video URL: ${videoDetails.url}`);
 
-            // Select the parent div element by its class name "mb-4 w-full"
-            const parentDiv = document.querySelector('.mb-4.w-full');
+            // Add a delay (e.g., 2 seconds) before continuing
+            setTimeout(() => {
+                // Select the parent div element by its class name "mb-4 w-full"
+                const parentDiv = document.querySelector('.mb-4.w-full');
 
-            if (parentDiv) {
-                // Find the input element inside the parent div
-                const inputElement = parentDiv.querySelector('input');
+                if (parentDiv) {
+                    // Find the input element inside the parent div
+                    const inputElement = parentDiv.querySelector('input');
 
-                if (inputElement) {
-                    // You can access its value property
-                    const inputValue = inputElement.value;
+                    if (inputElement) {
+                        // You can access its value property
+                        const inputValue = inputElement.value;
 
-                    // Modify the input element's value
+                        // Modify the input element's value
+                        const text = `${videoDetails.name}`;
+                        const event = new Event('input', {
+                            bubbles: true
+                        });
+                        event.simulated = true;
+                        inputElement.value = text;
+
+                        // Dispatch the 'input' event to trigger any associated event listeners
+                        inputElement.dispatchEvent(event);
+
+                        // Highlight the input field
+                        inputElement.style.border = '2px solid red';
+                    } else {
+                        console.error('Input element not found inside the parent div.');
+                    }
+                } else {
+                    console.error('Parent div element not found.');
+                }
+
+                // Locate by placeholder text
+                const videoNameInput = document.querySelector("text-input[placeholder='Untitled']");
+
+                if (videoNameInput) {
+                    // Highlight the input field
+                    videoNameInput.style.border = '2px solid red';
                     const text = `${videoDetails.name}`;
                     const event = new Event('input', {
                         bubbles: true
                     });
                     event.simulated = true;
-                    inputElement.value = text;
+                    videoNameInput.value = text;
+                    videoNameInput.dispatchEvent(event);
+                }
 
-                    // Dispatch the 'input' event to trigger any associated event listeners
-                    inputElement.dispatchEvent(event);
+                // Locate by placeholder text
+                const videoUrlInput = document.querySelector("input[placeholder='https://www.youtube.com/watch?v=XYLgwxbwEb8']");
 
+                if (videoUrlInput) {
                     // Highlight the input field
-                    inputElement.style.border = '2px solid red';
+                    videoUrlInput.style.border = '2px solid red';
+                    const text = `${videoDetails.url}`;
+                    const event = new Event('input', {
+                        bubbles: true
+                    });
+                    event.simulated = true;
+                    videoUrlInput.value = text;
+                    videoUrlInput.dispatchEvent(event);
                 } else {
-                    console.error('Input element not found inside the parent div.');
+                    console.error('Video URL input element not found.');
                 }
-            } else {
-                console.error('Parent div element not found.');
-            }
 
-            // Locate by placeholder text
-            const videoNameInput = document.querySelector("text-input[placeholder='Untitled']");
 
-            if (videoNameInput) {
-                // Highlight the input field
-                videoNameInput.style.border = '2px solid red';
-                const text = `${videoDetails.name}`;
-                const event = new Event('input', {
-                    bubbles: true
-                });
-                event.simulated = true;
-                videoNameInput.value = text;
-                videoNameInput.dispatchEvent(event);
-            }
+                // Locate the desired button element with the specified ID attribute
+                // const buttonElement = document.querySelector("#popover-trigger-\\3Arr\\3A");
 
-            // Locate by placeholder text
-            const videoUrlInput = document.querySelector("input[placeholder='https://www.youtube.com/watch?v=XYLgwxbwEb8']");
+                // Select the button element with the specific ID
+                const buttonElement = document.querySelector("#popover-trigger-\\:ru\\:");
 
-            if (videoUrlInput) {
-                // Highlight the input field
-                videoUrlInput.style.border = '2px solid red';
-                const text = `${videoDetails.url}`;
-                const event = new Event('input', {
-                    bubbles: true
-                });
-                event.simulated = true;
-                videoUrlInput.value = text;
-                videoUrlInput.dispatchEvent(event);
-            } else {
-                console.error('Video URL input element not found.');
-            }
-
-            // Locate the div element with the specified ID attribute
-            const element = document.querySelector("#popover-trigger-\\3Arl\\3A > .block");
-            element.click();
-
-            if (element) {
-                // Highlight the input field
-                element.style.border = '2px solid red';
-            }
-
-            function waitForElementToDisplay(selector, time) {
-                if (document.querySelector(selector) != null) {
-                    // Once the element is available, you can trigger the click event
-                    document.querySelector(selector).click();
+                if (buttonElement) {
+                    // Highlight the input field
+                    buttonElement.style.border = '2px solid red';
+                    buttonElement.click();
+                    // Add a delay (e.g., 2 seconds) before continuing
+                    setTimeout(() => {
+                        // Locate and click the "Hindi" element based on its text content
+                        const spanElements = document.querySelectorAll("span");
+                        spanElements.forEach((span) => {
+                            if (span.textContent.includes('Hindi')) {
+                                span.click();
+                            }
+                        });
+                    }, 2000); // 2-second delay before clicking Hindi
                 } else {
-                    setTimeout(function () {
-                        waitForElementToDisplay(selector, time);
-                    }, time);
+                    console.error('Button element not found.');
                 }
-            }
-
-            // Use the function to wait for the Hindi option to display
-            // Replace 'selector' with the actual selector of the Hindi option
-            waitForElementToDisplay("div[aria-label='Hindi']", 200);
-
-            // EOS
+            }, 2000); // 2-second delay before continuing
         });
     });
+    // Add a delay (e.g., 2 seconds) before continuing
+    setTimeout(() => {
+        // Wait for 10 seconds before clicking the 'Create Dub' button so that tokens are calculated
+        const createDubButton = document.querySelector(".btn.btn-primary.btn-md.btn-normal");
+
+        if (createDubButton) {
+            // Click on the 'Create Dub' button
+            createDubButton.click();
+        } else {
+            console.error('Create Dub button not found.');
+        }
+    }, 2000); // 2 second delay before clicking 'Create Dub'
 }

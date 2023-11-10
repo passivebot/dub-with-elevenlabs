@@ -21,16 +21,51 @@ function injectDubButton() {
   button.onclick = function() {
     chrome.runtime.sendMessage({
       action: "openDubbingPage",
-        url: window.location.href,
-        videoName: document.querySelector('.title.style-scope.ytd-video-primary-info-renderer').innerText
+      url: window.location.href,
+      videoName: document.querySelector('.title.style-scope.ytd-video-primary-info-renderer').innerText
     });
   };
 
   player.appendChild(button);
 }
 
+function updateDubButton() {
+  // Function to check for the visibility of the time span element
+  function waitForTimeSpanVisibility() {
+    const timeSpan = document.querySelector(".block.font-serif.text-xs.font-normal.text-gray-700");
+
+    if (timeSpan) {
+      // Extract the text content and parse the remaining time
+      const timeText = timeSpan.textContent;
+      const remainingTime = parseInt(timeText, 10); // Assuming the time is in minutes (e.g., 1m26s)
+
+      if (!isNaN(remainingTime)) {
+        // Update the "Dub" button with the remaining time
+        const dubButton = document.querySelector(".btn.btn-primary.btn-md.btn-normal");
+        if (dubButton) {
+          dubButton.textContent = `Dub (${remainingTime} minutes remaining)`;
+        } else {
+          console.error('Dub button not found.');
+        }
+      } else {
+        console.error('Failed to parse remaining time.');
+      }
+    } else {
+      // If the time span is not found, wait and check again after a delay
+      setTimeout(waitForTimeSpanVisibility, 1000); // Check every 1 second (adjust as needed)
+    }
+  }
+
+  // Start checking for the visibility of the time span element
+  waitForTimeSpanVisibility();
+}
+
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', injectDubButton);
+  document.addEventListener('DOMContentLoaded', () => {
+    injectDubButton();
+    updateDubButton();
+  });
 } else {
   injectDubButton();
+  updateDubButton();
 }
