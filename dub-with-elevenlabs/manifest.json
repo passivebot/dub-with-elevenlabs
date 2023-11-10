@@ -1,0 +1,16 @@
+{
+  "manifest_version": 3,
+  "name": "Dub with ElevenLabs",
+  "version": "1.0",
+  "permissions": ["activeTab", "scripting", "tabs"],
+  "host_permissions": ["*://*.youtube.com/*", "*://*.elevenlabs.io/*"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://*.youtube.com/*"],
+      "js": ["content.js"]
+    } 
+    ]
+}
