@@ -1,3 +1,34 @@
+// content.js
+
+// Function to change the button text to 'Watch'
+function changeDubButtonToWatch() {
+  const createDubButton = document.querySelector(".btn.btn-primary.btn-md.btn-normal");
+  if (createDubButton) {
+    createDubButton.textContent = 'Watch'; // Change the button text to 'Watch'
+    // Modify classes or styles as needed
+    createDubButton.classList.remove('btn-primary');
+    createDubButton.classList.add('btn-success');
+  } else {
+    console.error('Create Dub button not found.');
+  }
+}
+
+// Function to check if all dubs have been completed
+function checkAllDubsCompleted() {
+  const almostThereElements = document.querySelectorAll('.block.font-serif.text-xs.font-normal.text-gray-700');
+  const isAnyDubPending = Array.from(almostThereElements).some(span => span.textContent.includes("Almost there"));
+
+  // If no elements contain 'Almost there', then change the button to 'Watch'
+  if (!isAnyDubPending) {
+    console.log('All dubs have been completed');
+    changeDubButtonToWatch();
+    clearInterval(checkInterval); // Stop the interval check when all dubs are completed
+  }
+}
+
+// Variable to store the interval ID
+let checkInterval;
+
 function injectDubButton() {
   const player = document.querySelector('.html5-video-player');
   if (!player) {
@@ -24,6 +55,9 @@ function injectDubButton() {
       url: window.location.href,
       videoName: document.querySelector('.title.style-scope.ytd-video-primary-info-renderer').innerText
     });
+
+    // Start checking the status of the dubs every 5 seconds after the button is clicked
+    checkInterval = setInterval(checkAllDubsCompleted, 5000);
   };
 
   player.appendChild(button);
