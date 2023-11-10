@@ -1,40 +1,77 @@
-let dubbingTabId = null;
-let videoDetails = {};
+let videoDetails = {}; // Initialize videoDetails to an empty object.
+let dubbingTabId = null; // Declare dubbingTabId outside to keep track of the tab.
 
 chrome.runtime.onInstalled.addListener(() => {
     console.log('Dub with ElevenLabs extension installed.');
 });
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    if (message.action === "openDubbingPage") {
-        videoDetails = {
-            name: message.videoName,
-            url: message.url
-        };
-        chrome.tabs.create({
-            url: 'https://elevenlabs.io/dubbing'
-        }, (tab) => {
-            dubbingTabId = tab.id;
-        });
-        sendResponse({
-            status: 'success'
-        });
+    try {
+        if (message.action === "openDubbingPage") {
+            videoDetails = {
+                name: message.videoName,
+                url: message.url
+            };
+            chrome.tabs.create({
+                url: 'https://elevenlabs.io/dubbing'
+            }, (tab) => {
+                dubbingTabId = tab.id;
+            });
+            sendResponse({
+                status: 'success'
+            });
+        } else if (message.action === "foundSignUpText") {
+            chrome.tabs.create({
+                url: 'https://try.elevenlabs.io/c3516gvcplb3'
+            });
+        }
+    } catch (error) {
+        console.error('Error in message listener:', error);
     }
-    return true;
+    return true; // Keep the message channel open for asynchronous response.
 });
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-    if (tabId === dubbingTabId && changeInfo.status === 'complete' && tab.url.includes('https://elevenlabs.io/dubbing')) {
-        chrome.scripting.executeScript({
-            target: {
-                tabId: tabId
-            },
-            function: injectDataIntoPage,
-            args: [videoDetails]
-        });
-        dubbingTabId = null;
+    try {
+        if (dubbingTabId && tabId === dubbingTabId && changeInfo.status === 'complete' && tab.url.includes('https://elevenlabs.io/dubbing')) {
+            console.log('Dubbing page loaded. Checking for sign up text.');
+            chrome.scripting.executeScript({
+                target: {
+                    tabId: tabId
+                },
+                func: checkForSignUpText
+            });
+            dubbingTabId = null;
+        } else if (tab.url.includes('https://elevenlabs.io/dubbing') && changeInfo.status === 'complete') {
+            console.log('Dubbing page loaded. Injecting data into the page.');
+            chrome.scripting.executeScript({
+                target: {
+                    tabId: tabId
+                },
+                func: injectDataIntoPage,
+                args: [videoDetails]
+            });
+        }
+    } catch (error) {
+        console.error('Error in tabs onUpdated listener:', error);
     }
 });
+
+function checkForSignUpText() {
+    try {
+        const bodyText = document.body.textContent || document.body.innerText;
+        const hasSignUpText = bodyText.includes("Sign up");
+
+        if (hasSignUpText) {
+            chrome.runtime.sendMessage({
+                action: "foundSignUpText"
+            });
+        }
+    } catch (error) {
+        console.error('Error in checkForSignUpText:', error);
+    }
+}
+
 
 function injectDataIntoPage(videoDetails) {
     function waitForElement(querySelectorOrXPath, isXPath, callback) {
