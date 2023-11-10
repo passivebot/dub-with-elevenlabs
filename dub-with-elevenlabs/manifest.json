@@ -5,11 +5,12 @@
   "permissions": ["activeTab", "scripting", "tabs"],
   "host_permissions": ["*://*.youtube.com/*", "*://*.elevenlabs.io/*"],
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "background.js",
+    "persistent": false
   },
   "content_scripts": [
     {
-      "matches": ["*://*.youtube.com/*"],
+      "matches": ["<all_urls>"],
       "js": ["content.js"]
     } 
     ]

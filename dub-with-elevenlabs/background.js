@@ -131,12 +131,8 @@ function injectDataIntoPage(videoDetails) {
                     console.error('Video URL input element not found.');
                 }
 
-
-                // Locate the desired button element with the specified ID attribute
-                // const buttonElement = document.querySelector("#popover-trigger-\\3Arr\\3A");
-
                 // Select the button element with the specific ID
-                const buttonElement = document.querySelector("#popover-trigger-\\:ru\\:");
+                const buttonElement = document.querySelector("#popover-trigger-\\:r11\\:");
 
                 if (buttonElement) {
                     // Highlight the input field
@@ -158,7 +154,7 @@ function injectDataIntoPage(videoDetails) {
             }, 2000); // 2-second delay before continuing
         });
     });
-    // Add a delay (e.g., 2 seconds) before continuing
+    // Add a delay (e.g., 10 seconds) before continuing
     setTimeout(() => {
         // Wait for 10 seconds before clicking the 'Create Dub' button so that tokens are calculated
         const createDubButton = document.querySelector(".btn.btn-primary.btn-md.btn-normal");
@@ -169,5 +165,7 @@ function injectDataIntoPage(videoDetails) {
         } else {
             console.error('Create Dub button not found.');
         }
-    }, 2000); // 2 second delay before clicking 'Create Dub'
+    }, 10000); // 10 second delay before clicking 'Create Dub'
+
+
 }
