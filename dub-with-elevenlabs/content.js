@@ -18,7 +18,7 @@ function injectDubButton() {
   button.style.border = 'none';
   button.style.borderRadius = '2px';
   button.style.cursor = 'pointer';
-  button.onclick = function() {
+  button.onclick = function () {
     chrome.runtime.sendMessage({
       action: "openDubbingPage",
       url: window.location.href,
@@ -69,3 +69,33 @@ if (document.readyState === 'loading') {
   injectDubButton();
   updateDubButton();
 }
+
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.action === 'updateBadgeText') {
+    chrome.runtime.sendMessage({
+      action: "updateBadgeText",
+      text: request.text
+    });
+  } else if (request.action === 'updateDubStatus') {
+    const dubButton = document.querySelector("button[innerText='Dub']");
+    if (dubButton) {
+      dubButton.innerText = `Dub ${request.status}`;
+    }
+  }
+});
+
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.action === 'updateBadgeText') {
+    chrome.runtime.sendMessage({
+      action: "updateBadgeText",
+      text: request.text
+    });
+  } else if (request.action === 'updateDubStatus') {
+    const dubButton = document.querySelector("button[innerText='Dub']");
+    if (dubButton) {
+      dubButton.innerText = `Dub ${request.status}`;
+    }
+  }
+
+  return true;
+});

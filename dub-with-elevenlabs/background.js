@@ -1,79 +1,69 @@
-let videoDetails = {}; // Initialize videoDetails to an empty object.
-let dubbingTabId = null; // Declare dubbingTabId outside to keep track of the tab.
+let dubbingTabId = null;
+let videoDetails = {};
+let intervalID = null;
+
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+    if (tabId === dubbingTabId && changeInfo.status === 'complete' && tab.url.includes('https://elevenlabs.io/dubbing')) {
+        chrome.scripting.executeScript({
+            target: {
+                tabId: tabId
+            },
+            function: injectDataIntoPage,
+            args: [videoDetails]
+        });
+
+        // Add an interval to periodically check for updates. This will depends on your implementation of `checkStatus`
+        intervalID = setInterval(() => {
+            chrome.scripting.executeScript({
+                target: {
+                    tabId: tabId
+                },
+                function: checkStatus,
+            });
+        }, 5000); // check every 5 seconds
+
+        dubbingTabId = null;
+    } else if (tabId === dubbingTabId && changeInfo.status == 'loading') {
+        // Clear the interval when the tab begins to load a new page
+        clearInterval(intervalID);
+    }
+});
+
+function checkStatus() {
+    // Depends on how you can obtain the status from the page
+    const statusElement = document.querySelector(".status-selector");
+    const status = statusElement ? statusElement.textContent : "status not found";
+
+    // Send the status back to the content script so it can be displayed on the button
+    chrome.runtime.sendMessage({
+        action: "updateDubStatus",
+        status: status
+    });
+}
 
 chrome.runtime.onInstalled.addListener(() => {
     console.log('Dub with ElevenLabs extension installed.');
 });
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    try {
-        if (message.action === "openDubbingPage") {
-            videoDetails = {
-                name: message.videoName,
-                url: message.url
-            };
-            chrome.tabs.create({
-                url: 'https://elevenlabs.io/dubbing'
-            }, (tab) => {
-                dubbingTabId = tab.id;
-            });
-            sendResponse({
-                status: 'success'
-            });
-        } else if (message.action === "foundSignUpText") {
-            chrome.tabs.create({
-                url: 'https://try.elevenlabs.io/c3516gvcplb3'
-            });
-        }
-    } catch (error) {
-        console.error('Error in message listener:', error);
+    if (message.action === "openDubbingPage") {
+        videoDetails = {
+            name: message.videoName,
+            url: message.url
+        };
+        chrome.tabs.create({
+            url: 'https://elevenlabs.io/dubbing'
+        }, (tab) => {
+            dubbingTabId = tab.id;
+        });
+        sendResponse({
+            status: 'success'
+        });
     }
-    return true; // Keep the message channel open for asynchronous response.
+    return true;
 });
 
-chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-    try {
-        if (dubbingTabId && tabId === dubbingTabId && changeInfo.status === 'complete' && tab.url.includes('https://elevenlabs.io/dubbing')) {
-            console.log('Dubbing page loaded. Checking for sign up text.');
-            chrome.scripting.executeScript({
-                target: {
-                    tabId: tabId
-                },
-                func: checkForSignUpText
-            });
-            dubbingTabId = null;
-        } else if (tab.url.includes('https://elevenlabs.io/dubbing') && changeInfo.status === 'complete') {
-            console.log('Dubbing page loaded. Injecting data into the page.');
-            chrome.scripting.executeScript({
-                target: {
-                    tabId: tabId
-                },
-                func: injectDataIntoPage,
-                args: [videoDetails]
-            });
-        }
-    } catch (error) {
-        console.error('Error in tabs onUpdated listener:', error);
-    }
-});
-
-function checkForSignUpText() {
-    try {
-        const bodyText = document.body.textContent || document.body.innerText;
-        const hasSignUpText = bodyText.includes("Sign up");
-
-        if (hasSignUpText) {
-            chrome.runtime.sendMessage({
-                action: "foundSignUpText"
-            });
-        }
-    } catch (error) {
-        console.error('Error in checkForSignUpText:', error);
-    }
-}
-
-
-function injectDataIntoPage(videoDetails) {
+function injectDataIntoPage(videoDetails, callback) {
     function waitForElement(querySelectorOrXPath, isXPath, callback) {
         const checkExist = setInterval(() => {
             let element;
@@ -87,24 +77,23 @@ function injectDataIntoPage(videoDetails) {
                 clearInterval(checkExist);
                 callback(element);
             }
-        }, 100); // check every 100ms
+        }, 2000);
     }
 
-    // Use the same XPath to locate the 'Create New Dub' button
     waitForElement('/html/body/div[1]/div[4]/div/div/div[2]/button', true, (createNewDub) => {
         createNewDub.click();
+        console.log('Create New Dub button clicked.');
 
-        // After clicking 'Create New Dub', wait for the YouTube option to be available
-        // Assume 'Youtube' is a unique text within a clickable element like a button or a list item
         waitForElement("//*[contains(text(),'Youtube')]", true, (youtubeOption) => {
             youtubeOption.click();
+            console.log('Youtube option clicked.');
 
-            // Select the parent div element by its class name "mb-4 w-full"
             const parentDiv = document.querySelector('.mb-4.w-full');
             if (parentDiv) {
                 const inputElement = parentDiv.querySelector('input');
                 if (inputElement) {
                     inputElement.value = videoDetails.name;
+                    console.log(`Selected video name: ${videoDetails.name}`);
                     inputElement.style.border = '2px solid red';
                     inputElement.dispatchEvent(new Event('input', {
                         bubbles: true
@@ -115,6 +104,7 @@ function injectDataIntoPage(videoDetails) {
             const videoNameInput = document.querySelector("input[placeholder='Untitled']");
             if (videoNameInput) {
                 videoNameInput.value = videoDetails.name;
+                console.log(`Selected video name: ${videoDetails.name}`);
                 videoNameInput.style.border = '2px solid red';
                 videoNameInput.dispatchEvent(new Event('input', {
                     bubbles: true
@@ -125,6 +115,7 @@ function injectDataIntoPage(videoDetails) {
             if (videoUrlInput) {
                 videoUrlInput.value = videoDetails.url;
                 videoUrlInput.style.border = '2px solid red';
+                console.log(`Selected video url: ${videoDetails.url}`);
                 videoUrlInput.dispatchEvent(new Event('input', {
                     bubbles: true
                 }));
@@ -147,34 +138,51 @@ function injectDataIntoPage(videoDetails) {
                 return highestButtonElement;
             }
 
-            highestButtonElement = selectButtonWithHighestIdentifier();
+            let highestButtonElement = selectButtonWithHighestIdentifier();
             if (highestButtonElement) {
                 highestButtonElement.style.border = '2px solid red';
                 highestButtonElement.click();
+                console.log('Target Language button clicked.');
 
                 setTimeout(() => {
                     const spanElements = document.querySelectorAll("span");
                     spanElements.forEach((span) => {
                         if (span.textContent.includes('Hindi')) {
+                            console.log('Hindi language selected.');
                             span.click();
                         }
-                    }, 2000); // 2000 milliseconds = 2 seconds
-                });
+                    });
+                }, 2000);
 
                 setTimeout(() => {
-                    // Wait for 10 seconds before clicking the 'Create Dub' button so that tokens are calculated
                     const createDubButton = document.querySelector(".btn.btn-primary.btn-md.btn-normal");
 
                     if (createDubButton) {
-                        // Click on the 'Create Dub' button
                         createDubButton.click();
-                        console.log('Dub created successfully.');
+                        console.log('Create Dub button clicked.');
                     } else {
                         console.error('Create Dub button not found.');
                     }
                 }, 10000);
 
+                setTimeout(() => {
+                    const firstRow = document.querySelector('tbody tr:first-child');
+                    // Code to get the first row of a table, you need to define or select 'firstRow' before this block
+                    const firstRowData = {
+                        name: firstRow.querySelector('td:nth-child(1)').textContent.trim(),
+                        language: firstRow.querySelector('td:nth-child(2)').textContent.trim(),
+                        status: firstRow.querySelector('td:nth-child(3)').textContent.trim(),
+                        created: firstRow.querySelector('td:nth-child(4)').textContent.trim()
+                    };
 
+                    console.log(firstRowData);
+
+                    // Send the entire row data back to the content script and display it on the button
+                    chrome.runtime.sendMessage({
+                        action: "updateDubStatus",
+                        status: firstRowData.status
+                    });
+                }, 20000);
             }
         });
     });
